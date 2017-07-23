@@ -319,6 +319,14 @@ public class EditorActivity extends AppCompatActivity implements
                 quantity = quantity - 1;
                 displayquantity(quantity);
                 displayPrice(quantity * 5);
+
+                Intent intent = new Intent(Intent.ACTION_SENDTO);
+                intent.setData(Uri.parse("mailto:")); // only email apps should handle this
+                intent.putExtra(Intent.EXTRA_SUBJECT, "PS Game INVENTORY order for "+ mNameEditText);
+                intent.putExtra(Intent.EXTRA_SUBJECT, quantity);
+                if (intent.resolveActivity(getPackageManager()) != null) {
+                    startActivity(intent);
+                }
                 return true;
 
             case R.id.action_delete:
