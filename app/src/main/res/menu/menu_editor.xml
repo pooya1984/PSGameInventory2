@@ -12,6 +12,11 @@
         app:showAsAction="always" />
     <item
         android:id="@+id/action_delete"
-        android:title="@string/action_sale"
+        android:title="@string/action_delete_all_entries"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/action_sale"
+        android:title="@string/action_sale"
+        app:showAsAction="always"
+        android:icon="@drawable/ic_action_cart"/>
 </menu>
