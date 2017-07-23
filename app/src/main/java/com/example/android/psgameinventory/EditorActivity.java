@@ -9,11 +9,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.ParcelFileDescriptor;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
@@ -31,8 +28,6 @@ import android.widget.Toast;
 
 import com.example.android.psgameinventory.data.GameContract.GameEntry;
 
-import java.io.FileDescriptor;
-import java.io.IOException;
 import java.text.NumberFormat;
 
 
@@ -284,30 +279,6 @@ public class EditorActivity extends AppCompatActivity implements
         }
     }
 
-    private Bitmap getBitmapFromUri(Uri uri) {
-        ParcelFileDescriptor parcelFileDescriptor = null;
-        try {
-            parcelFileDescriptor =
-                    getContentResolver().openFileDescriptor(uri, "r");
-            FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
-            Bitmap image = BitmapFactory.decodeFileDescriptor(fileDescriptor);
-            parcelFileDescriptor.close();
-            return image;
-        } catch (Exception e) {
-            Log.e(LOG_TAG, "Failed to load image.", e);
-            return null;
-        } finally {
-            try {
-                if (parcelFileDescriptor != null) {
-                    parcelFileDescriptor.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-                Log.e(LOG_TAG, "Error closing ParcelFile Descriptor");
-            }
-        }
-    }
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu options from the res/menu/menu_editor.xml file.
@@ -326,6 +297,8 @@ public class EditorActivity extends AppCompatActivity implements
         if (mCurrentGAMEUri == null) {
             MenuItem menuItem = menu.findItem(R.id.action_delete);
             menuItem.setVisible(false);
+            MenuItem menuItem1 = menu.findItem(R.id.action_sale);
+            menuItem1.setVisible(false);
         }
         return true;}
 
@@ -336,16 +309,26 @@ public class EditorActivity extends AppCompatActivity implements
                 saveGame();
                 finish();
                 return true;
+
+            case R.id.action_sale:
+                if (quantity < 1) {
+                    // Show an error message as a toast
+                    Toast.makeText(this, "ALL SOLED", Toast.LENGTH_SHORT).show();
+                    // Exit this method early because there's nothing left to do
+                    return true;}
+                quantity = quantity - 1;
+                displayquantity(quantity);
+                displayPrice(quantity * 5);
+                return true;
+
             case R.id.action_delete:
                 showDeleteConfirmationDialog();
                 return true;
-            case android.R.id.home:
 
+            case android.R.id.home:
                 if (!mGameHasChanged) {
                     NavUtils.navigateUpFromSameTask(EditorActivity.this);
-                    return true;
-                }
-
+                    return true;}
                 DialogInterface.OnClickListener discardButtonClickListener =
                         new DialogInterface.OnClickListener() {
                             @Override
