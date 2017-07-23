@@ -102,7 +102,7 @@ public class GameProvider extends ContentProvider {
         }
 
         // If the price is provided, check that it's greater than or equal to 0
-        Integer price = values.getAsInteger(GameEntry.COLUMN_GAME_STOCK);
+        Integer price = values.getAsInteger(GameEntry.COLUMN_GAME_PRICE);
         if (price != null && price < 0) {
             throw new IllegalArgumentException("Game requires valid price");
         }

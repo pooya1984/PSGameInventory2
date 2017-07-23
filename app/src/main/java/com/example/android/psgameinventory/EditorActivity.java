@@ -228,6 +228,7 @@ public class EditorActivity extends AppCompatActivity implements
 
         // integer value. Use 0 by default.
         int price = 0;
+        if (price>0){Integer.parseInt(priceString);}
         values.put(GameEntry.COLUMN_GAME_PRICE, price);
 
         // Determine if this is a new or existing pet by checking if mCurrentGAMEUri is null or not
@@ -323,7 +324,7 @@ public class EditorActivity extends AppCompatActivity implements
                 Intent intent = new Intent(Intent.ACTION_SENDTO);
                 intent.setData(Uri.parse("mailto:")); // only email apps should handle this
                 intent.putExtra(Intent.EXTRA_SUBJECT, "PS Game INVENTORY order for "+ mNameEditText);
-                intent.putExtra(Intent.EXTRA_SUBJECT, quantity);
+                intent.putExtra(Intent.EXTRA_SUBJECT, quantity+"$");
                 if (intent.resolveActivity(getPackageManager()) != null) {
                     startActivity(intent);
                 }
