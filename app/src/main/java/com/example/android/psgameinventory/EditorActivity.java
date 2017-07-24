@@ -1,5 +1,6 @@
 package com.example.android.psgameinventory;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.LoaderManager;
@@ -8,10 +9,18 @@ import android.content.CursorLoader;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.Loader;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NavUtils;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
@@ -19,22 +28,28 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.android.psgameinventory.data.GameContract.GameEntry;
 
+import java.io.FileDescriptor;
+import java.io.IOException;
 import java.text.NumberFormat;
 
 
 public class EditorActivity extends AppCompatActivity implements
         LoaderManager.LoaderCallbacks<Cursor> {
 
-    int quantity=0;
+    int quantity = 0;
+    private static final int MY_PERMISSIONS_REQUEST = 2;
+
 
     private static final String LOG_TAG = CatalogActivity.class.getSimpleName();
     private static final int PICK_IMAGE_REQUEST = 0;
@@ -42,29 +57,52 @@ public class EditorActivity extends AppCompatActivity implements
 
     private static final int EXISTING_GAME_LOADER = 0;
 
-    /** Content URI for the existing game (null if it's a new game) */
+    /**
+     * ImageView field to enter the game's image
+     */
+    private ImageView mImageView;
+
+    private Bitmap mBitmap;
+
+    private String mUri = "noimages";
+
+    /**
+     * Content URI for the existing game (null if it's a new game)
+     */
     private Uri mCurrentGAMEUri;
 
-    /** EditText field to enter the game's name */
+    /**
+     * EditText field to enter the game's name
+     */
     private EditText mNameEditText;
 
-    /** EditText field to enter the game's console */
+    /**
+     * EditText field to enter the game's console
+     */
     private Spinner mConsoleSpinner;
 
-    /** TextView field to enter the game's quantity */
+    /**
+     * TextView field to enter the game's quantity
+     */
     private TextView mQuantityEditText;
 
-    /** TextView field to enter the game's quantity */
+    /**
+     * TextView field to enter the game's quantity
+     */
     private TextView mPriceTextView;
 
-    /** EditText field to enter the game's genre */
+    /**
+     * EditText field to enter the game's genre
+     */
     private Spinner mGenreSpinner;
 
     private int mConsole = GameEntry.CONSOLE_UNKNOWN;
 
     private int mGenre = GameEntry.GENRE_UNKNOWN;
 
-    /** Boolean flag that keeps track of whether the game has been edited (true) or not (false) */
+    /**
+     * Boolean flag that keeps track of whether the game has been edited (true) or not (false)
+     */
     private boolean mGameHasChanged = false;
 
 
@@ -76,12 +114,28 @@ public class EditorActivity extends AppCompatActivity implements
         }
     };
 
-    private boolean isGalleryPicture = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
+
+        mImageView = (ImageView) findViewById(R.id.product_photo);
+        mImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                openImageSelector(view);
+            }
+        });
+        ViewTreeObserver viewTreeObserver = mImageView.getViewTreeObserver();
+        viewTreeObserver.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                    mImageView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                }
+            }
+        });
 
 
         Intent intent = getIntent();
@@ -108,6 +162,7 @@ public class EditorActivity extends AppCompatActivity implements
         mGenreSpinner.setOnTouchListener(mTouchListener);
 
         setupSpinner();
+        requestPermissions();
     }
 
     /**
@@ -115,7 +170,7 @@ public class EditorActivity extends AppCompatActivity implements
      */
     public void increment(View view) {
         quantity = quantity + 1;
-        if (quantity==100){
+        if (quantity == 100) {
             return;
         }
         displayquantity(quantity);
@@ -168,6 +223,7 @@ public class EditorActivity extends AppCompatActivity implements
                     }
                 }
             }
+
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
                 mGenre = GameEntry.GENRE_UNKNOWN;
@@ -195,6 +251,7 @@ public class EditorActivity extends AppCompatActivity implements
                     }
                 }
             }
+
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
                 mConsole = GameEntry.CONSOLE_UNKNOWN;
@@ -202,22 +259,52 @@ public class EditorActivity extends AppCompatActivity implements
         });
     }
 
+    private boolean isGalleryPicture = false;
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
+        Log.i(LOG_TAG, "Received an \"Activity Result\"");
+        // The ACTION_OPEN_DOCUMENT intent was sent with the request code READ_REQUEST_CODE.
+        // If the request code seen here doesn't match, it's the response to some other intent,
+        // and the below code shouldn't run at all.
+
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK) {
+            // The document selected by the user won't be returned in the intent.
+            // Instead, a URI to that document will be contained in the return intent
+            // provided to this method as a parameter.  Pull that uri using "resultData.getData()"
+
+            if (resultData != null) {
+                myUri = resultData.getData();
+                Log.i(LOG_TAG, "Uri: " + myUri.toString());
+
+                mBitmap = getBitmapFromUri(myUri);
+                mImageView.setImageBitmap(mBitmap);
+
+                isGalleryPicture = true;
+            }
+        }
+    }
+
     private void saveGame() {
         String nameString = mNameEditText.getText().toString().trim();
         String quantityString = mQuantityEditText.getText().toString().trim();
         String priceString = mPriceTextView.getText().toString().trim();
+        mUri = String.valueOf(myUri);
 
         if (mCurrentGAMEUri == null &&
-                TextUtils.isEmpty(nameString) && TextUtils.isEmpty(quantityString)&&TextUtils.isEmpty(priceString)&&
-                mGenre == GameEntry.GENRE_UNKNOWN  && mConsole == GameEntry.CONSOLE_UNKNOWN) {
+                TextUtils.isEmpty(nameString) && TextUtils.isEmpty(quantityString) && TextUtils.isEmpty(priceString) &&
+                mGenre == GameEntry.GENRE_UNKNOWN && mConsole == GameEntry.CONSOLE_UNKNOWN) {
             return;
         }
+
+
         // Create a ContentValues object where column names are the keys,
         // and pet attributes from the editor are the values.
         ContentValues values = new ContentValues();
         values.put(GameEntry.COLUMN_GAME_NAME, nameString);
         values.put(GameEntry.COLUMN_GAME_GENRE, mGenre);
         values.put(GameEntry.COLUMN_GAME_CONSOLE, mConsole);
+        values.put(GameEntry.COLUMN_GAME_IMAGE, mUri);
         // If the weight is not provided by the user, don't try to parse the string into an
         // integer value. Use 0 by default.
         int quantity = 0;
@@ -228,7 +315,9 @@ public class EditorActivity extends AppCompatActivity implements
 
         // integer value. Use 0 by default.
         int price = 0;
-        if (price>0){Integer.parseInt(priceString);}
+        if (price > 0) {
+            Integer.parseInt(priceString);
+        }
         values.put(GameEntry.COLUMN_GAME_PRICE, price);
 
         // Determine if this is a new or existing pet by checking if mCurrentGAMEUri is null or not
@@ -251,7 +340,98 @@ public class EditorActivity extends AppCompatActivity implements
                         Toast.LENGTH_SHORT).show();
             }
         }
+        if (mCurrentGAMEUri == null) {
+            Uri insertedRow = getContentResolver().insert(GameEntry.CONTENT_URI, values);
+            if (insertedRow == null) {
+                Toast.makeText(this, R.string.err_inserting_product, Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(this, R.string.ok_updated, Toast.LENGTH_LONG).show();
+                Intent intent = new Intent(this, CatalogActivity.class);
+                startActivity(intent);
+            }
+        } else {
+            // We are Updating
+            int rowUpdated = getContentResolver().update(mCurrentGAMEUri, values, null, null);
+
+            if (rowUpdated == 0) {
+                Toast.makeText(this, R.string.err_inserting_product, Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(this, R.string.ok_updated, Toast.LENGTH_LONG).show();
+                Intent intent = new Intent(this, CatalogActivity.class);
+                startActivity(intent);
+            }
+
+        }
     }
+
+    public void requestPermissions() {
+        // Here, thisActivity is the current activity
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE) ||
+                    ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+
+                // Show an expanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+            } else {
+
+                // No explanation needed, we can request the permission.
+
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        MY_PERMISSIONS_REQUEST);
+
+                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+                // app-defined int constant. The callback method gets the
+                // result of the request.
+            }
+        } else {
+            mImageView.setEnabled(true);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                        && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+                    mImageView.setEnabled(true);
+                } else {
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return;
+            }
+        }
+    }
+
+
+    public void openImageSelector(View view) {
+        Intent intent;
+        Log.e(LOG_TAG, "While is set and the ifs are worked through.");
+
+        if (Build.VERSION.SDK_INT < 19) {
+            intent = new Intent(Intent.ACTION_GET_CONTENT);
+        } else {
+            intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+        }
+
+        // Show only images, no videos or anything else
+        Log.e(LOG_TAG, "Check write to external permissions");
+
+        intent.setType("image/*");
+        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE_REQUEST);
+    }
+
     // Save the activity state when it's going to stop.
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -259,23 +439,36 @@ public class EditorActivity extends AppCompatActivity implements
 
         outState.putParcelable("picUri", myUri);
     }
+
+    // Recover the saved state when the activity is recreated.
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
-        Log.i(LOG_TAG, "Received an \"Activity Result\"");
-        // The ACTION_OPEN_DOCUMENT intent was sent with the request code READ_REQUEST_CODE.
-        // If the request code seen here doesn't match, it's the response to some other intent,
-        // and the below code shouldn't run at all.
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
 
-        if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK) {
-            // The document selected by the user won't be returned in the intent.
-            // Instead, a URI to that document will be contained in the return intent
-            // provided to this method as a parameter.  Pull that uri using "resultData.getData()"
+        myUri = savedInstanceState.getParcelable("picUri");
+    }
 
-            if (resultData != null) {
-                myUri = resultData.getData();
-                Log.i(LOG_TAG, "Uri: " + myUri.toString());
 
-                isGalleryPicture = true;
+    private Bitmap getBitmapFromUri(Uri uri) {
+        ParcelFileDescriptor parcelFileDescriptor = null;
+        try {
+            parcelFileDescriptor =
+                    getContentResolver().openFileDescriptor(uri, "r");
+            FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
+            Bitmap image = BitmapFactory.decodeFileDescriptor(fileDescriptor);
+            parcelFileDescriptor.close();
+            return image;
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Failed to load image.", e);
+            return null;
+        } finally {
+            try {
+                if (parcelFileDescriptor != null) {
+                    parcelFileDescriptor.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.e(LOG_TAG, "Error closing ParcelFile Descriptor");
             }
         }
     }
@@ -287,6 +480,7 @@ public class EditorActivity extends AppCompatActivity implements
         getMenuInflater().inflate(R.menu.menu_editor, menu);
         return true;
     }
+
     /**
      * This method is called after invalidateOptionsMenu(), so that the
      * menu can be updated (some menu items can be hidden or made visible).
@@ -301,7 +495,8 @@ public class EditorActivity extends AppCompatActivity implements
             MenuItem menuItem1 = menu.findItem(R.id.action_sale);
             menuItem1.setVisible(false);
         }
-        return true;}
+        return true;
+    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -316,15 +511,16 @@ public class EditorActivity extends AppCompatActivity implements
                     // Show an error message as a toast
                     Toast.makeText(this, "ALL SOLED", Toast.LENGTH_SHORT).show();
                     // Exit this method early because there's nothing left to do
-                    return true;}
+                    return true;
+                }
                 quantity = quantity - 1;
                 displayquantity(quantity);
                 displayPrice(quantity * 5);
 
                 Intent intent = new Intent(Intent.ACTION_SENDTO);
                 intent.setData(Uri.parse("mailto:")); // only email apps should handle this
-                intent.putExtra(Intent.EXTRA_SUBJECT, "PS Game INVENTORY order for "+ mNameEditText);
-                intent.putExtra(Intent.EXTRA_SUBJECT, quantity+"$");
+                intent.putExtra(Intent.EXTRA_SUBJECT, "PS Game INVENTORY order for " + mNameEditText);
+                intent.putExtra(Intent.EXTRA_SUBJECT, quantity + "$");
                 if (intent.resolveActivity(getPackageManager()) != null) {
                     startActivity(intent);
                 }
@@ -337,7 +533,8 @@ public class EditorActivity extends AppCompatActivity implements
             case android.R.id.home:
                 if (!mGameHasChanged) {
                     NavUtils.navigateUpFromSameTask(EditorActivity.this);
-                    return true;}
+                    return true;
+                }
                 DialogInterface.OnClickListener discardButtonClickListener =
                         new DialogInterface.OnClickListener() {
                             @Override
@@ -347,20 +544,27 @@ public class EditorActivity extends AppCompatActivity implements
                         };
 
                 showUnsavedChangesDialog(discardButtonClickListener);
-                return true;}
-        return super.onOptionsItemSelected(item);}
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
     @Override
     public void onBackPressed() {
         if (!mGameHasChanged) {
             super.onBackPressed();
-            return;}
+            return;
+        }
 
-    DialogInterface.OnClickListener discardButtonClickListener =
-     new DialogInterface.OnClickListener() {
-       @Override
-       public void onClick(DialogInterface dialogInterface, int i) {finish();}};
-        showUnsavedChangesDialog(discardButtonClickListener);}
+        DialogInterface.OnClickListener discardButtonClickListener =
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        finish();
+                    }
+                };
+        showUnsavedChangesDialog(discardButtonClickListener);
+    }
 
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
@@ -371,6 +575,7 @@ public class EditorActivity extends AppCompatActivity implements
                 GameEntry.COLUMN_GAME_CONSOLE,
                 GameEntry.COLUMN_GAME_PRICE,
                 GameEntry.COLUMN_GAME_STOCK,
+                GameEntry.COLUMN_GAME_IMAGE,
                 GameEntry.COLUMN_GAME_NAME};
 
         return new CursorLoader(this,   // Parent activity context
@@ -389,12 +594,14 @@ public class EditorActivity extends AppCompatActivity implements
 
         if (cursor.moveToFirst()) {
 
+            int i_COL_image = 5;
+
+
             int nameColumnIndex = cursor.getColumnIndex(GameEntry.COLUMN_GAME_NAME);
             int genreColumnIndex = cursor.getColumnIndex(GameEntry.COLUMN_GAME_GENRE);
             int consoleColumnIndex = cursor.getColumnIndex(GameEntry.COLUMN_GAME_CONSOLE);
             int quantityColumnIndex = cursor.getColumnIndex(GameEntry.COLUMN_GAME_STOCK);
-            int priceColumnIndex = cursor.getColumnIndex (GameEntry.COLUMN_GAME_PRICE);
-            int imageColumnIndex = cursor.getColumnIndex(GameEntry.COLUMN_GAME_IMAGE);
+            int priceColumnIndex = cursor.getColumnIndex(GameEntry.COLUMN_GAME_PRICE);
 
             String name = cursor.getString(nameColumnIndex);
             int genre = cursor.getInt(genreColumnIndex);
@@ -402,10 +609,12 @@ public class EditorActivity extends AppCompatActivity implements
             int quantity = cursor.getInt(quantityColumnIndex);
             int price = cursor.getInt(priceColumnIndex);
 
+
             // Update the views on the screen with the values from the database
             mNameEditText.setText(name);
             mQuantityEditText.setText(Integer.toString(quantity));
             mPriceTextView.setText(Integer.toString(price));
+            mImageView.setImageURI(Uri.parse(mUri));
 
 
             switch (console) {
@@ -455,6 +664,8 @@ public class EditorActivity extends AppCompatActivity implements
         mQuantityEditText.setText("");
         mPriceTextView.setText("");
         mConsoleSpinner.setSelection(0); // Select "Unknown" console
+        mImageView.setImageURI(myUri);
+
     }
 
     private void showUnsavedChangesDialog(

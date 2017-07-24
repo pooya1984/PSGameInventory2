@@ -25,12 +25,15 @@ public class GameDbHelper extends SQLiteOpenHelper {
                 + GameEntry.COLUMN_GAME_NAME + " TEXT NOT NULL, "
                 + GameEntry.COLUMN_GAME_GENRE + " INTEGER NOT NULL, "
                 + GameEntry.COLUMN_GAME_CONSOLE + " INTEGER NOT NULL, "
+                + GameEntry.COLUMN_GAME_IMAGE + " TEXT, "
                 +GameEntry.COLUMN_GAME_PRICE + " INTEGER NOT NULL DEFAULT 0, "
                 + GameEntry.COLUMN_GAME_STOCK + " INTEGER NOT NULL DEFAULT 0);";
         db.execSQL(SQL_CREATE_GAMES_TABLE);
     }
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        db.execSQL("DROP TABLE IF EXISTS " + GameEntry.TABLE_NAME);
+        onCreate(db);
         // If you need to add a column
         if (newVersion > oldVersion) {
             db.execSQL("ALTER TABLE foo ADD COLUMN new_column INTEGER DEFAULT 0");

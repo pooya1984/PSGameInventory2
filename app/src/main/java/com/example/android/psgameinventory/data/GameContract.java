@@ -12,11 +12,12 @@ public final class GameContract {
     private GameContract() {}
 
 
+
     public static final String CONTENT_AUTHORITY = "com.example.android.games";
+    public static final String PATH_GAMES = "games";
     public static final Uri BASE_CONTENT_URI = Uri.parse("content://" + CONTENT_AUTHORITY);
 
 
-    public static final String PATH_GAMES = "games";
 
     public static final class GameEntry implements BaseColumns {
 
@@ -39,13 +40,9 @@ public final class GameContract {
          * Type: INTEGER
          */
         public final static String _ID = BaseColumns._ID;
-
         public final static String COLUMN_GAME_NAME ="name";
-
         public final static String COLUMN_GAME_STOCK = "quantity";
-
         public final static String COLUMN_GAME_PRICE = "price";
-
         public final static String COLUMN_GAME_IMAGE = "IMAGE";
 
         /**
@@ -100,6 +97,4 @@ public final class GameContract {
             }
             return false;
         }}
-
-
 }

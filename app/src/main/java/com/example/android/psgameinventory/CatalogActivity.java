@@ -75,6 +75,8 @@ public class CatalogActivity extends AppCompatActivity implements
         values.put(GameEntry.COLUMN_GAME_PRICE,20);
         values.put(GameEntry.COLUMN_GAME_GENRE,GameEntry.GENRE_ADVENTURE);
         values.put(GameEntry.COLUMN_GAME_CONSOLE, GameEntry.CONSOLE_PS4);
+        values.put(GameEntry.COLUMN_GAME_IMAGE, "no image");
+
 
 
         getContentResolver().insert(GameEntry.CONTENT_URI, values);
@@ -118,7 +120,8 @@ public class CatalogActivity extends AppCompatActivity implements
                 GameEntry.COLUMN_GAME_GENRE,
                 GameEntry.COLUMN_GAME_NAME,
                 GameEntry.COLUMN_GAME_PRICE,
-                GameEntry.COLUMN_GAME_STOCK };
+                GameEntry.COLUMN_GAME_STOCK,
+                GameEntry.COLUMN_GAME_IMAGE };
 
         // This loader will execute the ContentProvider's query method on a background thread
         return new CursorLoader(this,   // Parent activity context

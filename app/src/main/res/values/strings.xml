@@ -55,4 +55,6 @@
     <string name="USD">usd</string>
     <string name="sci_fi">SCI-FI</string>
     <string name="photo_heading">Picture of Game</string>
+    <string name="err_inserting_product">Error with Inserting</string>
+    <string name="ok_updated">updated</string>
 </resources>
