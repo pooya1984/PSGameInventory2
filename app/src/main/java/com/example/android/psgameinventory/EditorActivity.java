@@ -291,8 +291,8 @@ public class EditorActivity extends AppCompatActivity implements
         String priceString = mPriceTextView.getText().toString().trim();
         mUri = String.valueOf(myUri);
 
-        if (mCurrentGAMEUri == null &&
-                TextUtils.isEmpty(nameString) && TextUtils.isEmpty(quantityString) && TextUtils.isEmpty(priceString) &&
+        if (mCurrentGAMEUri == null ||
+                TextUtils.isEmpty(nameString) || TextUtils.isEmpty(quantityString) || TextUtils.isEmpty(priceString) ||
                 mGenre == GameEntry.GENRE_UNKNOWN && mConsole == GameEntry.CONSOLE_UNKNOWN) {
             return;
         }
@@ -696,17 +696,11 @@ public class EditorActivity extends AppCompatActivity implements
                 deleteGame();
             }
         });
-        builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
+        builder.setNegativeButton(R.string.cancel, null); {
 
-                if (dialog != null) {
-                    dialog.dismiss();
-                }
-            }
-        });
         AlertDialog alertDialog = builder.create();
         alertDialog.show();
-    }
+    }}
 
 
     private void deleteGame() {

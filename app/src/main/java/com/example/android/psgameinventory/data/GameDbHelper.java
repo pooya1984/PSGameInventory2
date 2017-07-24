@@ -32,9 +32,6 @@ public class GameDbHelper extends SQLiteOpenHelper {
     }
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS " + GameEntry.TABLE_NAME);
-        onCreate(db);
-        // If you need to add a column
         if (newVersion > oldVersion) {
             db.execSQL("ALTER TABLE foo ADD COLUMN new_column INTEGER DEFAULT 0");
         }

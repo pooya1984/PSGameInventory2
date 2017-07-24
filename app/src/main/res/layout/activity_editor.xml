@@ -168,5 +168,11 @@
             android:layout_below="@id/heading_photo"
             android:background="@mipmap/ic_launcher"
             android:paddingBottom="16dp" />
+
+        <Button
+            android:id="@+id/buy"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="buy"/>
     </LinearLayout>
 </LinearLayout>
