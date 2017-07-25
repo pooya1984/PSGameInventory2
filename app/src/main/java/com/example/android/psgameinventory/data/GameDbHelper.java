@@ -26,8 +26,8 @@ public class GameDbHelper extends SQLiteOpenHelper {
                 + GameEntry.COLUMN_GAME_GENRE + " INTEGER NOT NULL, "
                 + GameEntry.COLUMN_GAME_CONSOLE + " INTEGER NOT NULL, "
                 + GameEntry.COLUMN_GAME_IMAGE + " TEXT, "
-                +GameEntry.COLUMN_GAME_PRICE + " INTEGER NOT NULL DEFAULT 0, "
-                + GameEntry.COLUMN_GAME_STOCK + " INTEGER NOT NULL DEFAULT 0);";
+                +GameEntry.COLUMN_GAME_PRICE + " TEXT NOT NULL , "
+                + GameEntry.COLUMN_GAME_STOCK + " INTEGER NOT NULL);";
         db.execSQL(SQL_CREATE_GAMES_TABLE);
     }
     @Override

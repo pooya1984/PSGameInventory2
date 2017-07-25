@@ -24,7 +24,7 @@
         android:textAppearance="?android:textAppearanceSmall"
         android:textColor="#AEB6BD"  />
     <TextView
-        android:id="@+id/price_view"
+        android:id="@+id/game_price"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAppearance="?android:textAppearanceSmall"
@@ -54,5 +54,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="sans-serif"
-        android:textColor="#AEB6BD"  /></LinearLayout>
+        android:textColor="#AEB6BD"  />
+
+    <ImageButton
+        android:id="@+id/action_sale"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_action_cart" />
+
+</LinearLayout>
 </RelativeLayout>

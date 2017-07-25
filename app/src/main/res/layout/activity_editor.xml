@@ -56,6 +56,7 @@
             android:paddingLeft="4dp">
 
             <Button
+                android:id="@+id/increment"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:onClick="increment"
@@ -76,11 +77,12 @@
                 android:onClick="decrement"
                 android:text="-" />
 
-            <TextView
+            <EditText
                 android:id="@+id/order_summary_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="16dp"
+                android:inputType="number"
                 android:paddingTop="16dp"
                 android:text="$0"
                 android:textAllCaps="true"
@@ -168,11 +170,5 @@
             android:layout_below="@id/heading_photo"
             android:background="@mipmap/ic_launcher"
             android:paddingBottom="16dp" />
-
-        <Button
-            android:id="@+id/buy"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="buy"/>
     </LinearLayout>
 </LinearLayout>

@@ -102,9 +102,9 @@ public class GameProvider extends ContentProvider {
         }
 
         // If the price is provided, check that it's greater than or equal to 0
-        Integer price = values.getAsInteger(GameEntry.COLUMN_GAME_PRICE);
-        if (price != null && price < 0) {
-            throw new IllegalArgumentException("Game requires valid price");
+        String price = values.getAsString(GameEntry.COLUMN_GAME_PRICE);
+        if (price == null) {
+            throw new IllegalArgumentException("Game requires a price");
         }
 
         SQLiteDatabase database = mDbHelper.getWritableDatabase();
@@ -150,9 +150,9 @@ public class GameProvider extends ContentProvider {
         }
 
         if (values.containsKey(GameEntry.COLUMN_GAME_PRICE)) {
-            Integer price = values.getAsInteger(GameEntry.COLUMN_GAME_PRICE);
-            if (price != null && price < 0) {
-                throw new IllegalArgumentException("Game requires valid price");
+            String price = values.getAsString(GameEntry.COLUMN_GAME_PRICE);
+            if (price == null) {
+                throw new IllegalArgumentException("Game requires a price");
             }
         }
 

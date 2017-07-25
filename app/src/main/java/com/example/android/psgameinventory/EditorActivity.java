@@ -41,7 +41,6 @@ import com.example.android.psgameinventory.data.GameContract.GameEntry;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
-import java.text.NumberFormat;
 
 
 public class EditorActivity extends AppCompatActivity implements
@@ -84,12 +83,12 @@ public class EditorActivity extends AppCompatActivity implements
     /**
      * TextView field to enter the game's quantity
      */
-    private TextView mQuantityEditText;
+    private TextView mQuantity;
 
     /**
      * TextView field to enter the game's quantity
      */
-    private TextView mPriceTextView;
+    private EditText mPriceEditText;
 
     /**
      * EditText field to enter the game's genre
@@ -120,6 +119,7 @@ public class EditorActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
 
+
         mImageView = (ImageView) findViewById(R.id.product_photo);
         mImageView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -149,16 +149,17 @@ public class EditorActivity extends AppCompatActivity implements
             getLoaderManager().initLoader(EXISTING_GAME_LOADER, null, this);
         }
 
+
         mNameEditText = (EditText) findViewById(R.id.edit_game_name);
         mConsoleSpinner = (Spinner) findViewById(R.id.spinner_console);
-        mQuantityEditText = (TextView) findViewById(R.id.edit_game_quantity);
-        mPriceTextView = (TextView) findViewById(R.id.order_summary_text_view);
+        mQuantity = (TextView) findViewById(R.id.edit_game_quantity);
+        mPriceEditText = (EditText) findViewById(R.id.order_summary_text_view);
         mGenreSpinner = (Spinner) findViewById(R.id.spinner_genre);
 
         mNameEditText.setOnTouchListener(mTouchListener);
         mConsoleSpinner.setOnTouchListener(mTouchListener);
-        mQuantityEditText.setOnTouchListener(mTouchListener);
-        mPriceTextView.setOnTouchListener(mTouchListener);
+        mQuantity.setOnTouchListener(mTouchListener);
+        mPriceEditText.setOnTouchListener(mTouchListener);
         mGenreSpinner.setOnTouchListener(mTouchListener);
 
         setupSpinner();
@@ -168,30 +169,6 @@ public class EditorActivity extends AppCompatActivity implements
     /**
      * This method is called when the plus button is clicked.
      */
-    public void increment(View view) {
-        quantity = quantity + 1;
-        if (quantity == 100) {
-            return;
-        }
-        displayquantity(quantity);
-        displayPrice(quantity * 5);
-    }
-
-    /**
-     * This method is called when the minus button is clicked.
-     */
-    public void decrement(View view) {
-
-        if (quantity < 1) {
-            // Show an error message as a toast
-            Toast.makeText(this, "You cannot have less than 1 coffee", Toast.LENGTH_SHORT).show();
-            // Exit this method early because there's nothing left to do
-            return;
-        }
-        quantity = quantity - 1;
-        displayquantity(quantity);
-        displayPrice(quantity * 5);
-    }
 
     private void setupSpinner() {
         ArrayAdapter genreSpinnerAdapter = ArrayAdapter.createFromResource(this,
@@ -287,82 +264,65 @@ public class EditorActivity extends AppCompatActivity implements
 
     private void saveGame() {
         String nameString = mNameEditText.getText().toString().trim();
-        String quantityString = mQuantityEditText.getText().toString().trim();
-        String priceString = mPriceTextView.getText().toString().trim();
+        String quantityString = mQuantity.getText().toString().trim();
+        String priceString = mPriceEditText.getText().toString().trim();
         mUri = String.valueOf(myUri);
 
-        if (mCurrentGAMEUri == null ||
-                TextUtils.isEmpty(nameString) || TextUtils.isEmpty(quantityString) || TextUtils.isEmpty(priceString) ||
+        int quantity = Integer.parseInt(quantityString);
+
+
+
+        if (mCurrentGAMEUri == null &&
+                TextUtils.isEmpty(nameString) || TextUtils.isEmpty(quantityString) || TextUtils.isEmpty(priceString) &&
                 mGenre == GameEntry.GENRE_UNKNOWN && mConsole == GameEntry.CONSOLE_UNKNOWN) {
             return;
         }
-
-
         // Create a ContentValues object where column names are the keys,
         // and pet attributes from the editor are the values.
         ContentValues values = new ContentValues();
         values.put(GameEntry.COLUMN_GAME_NAME, nameString);
         values.put(GameEntry.COLUMN_GAME_GENRE, mGenre);
         values.put(GameEntry.COLUMN_GAME_CONSOLE, mConsole);
+        values.put(GameEntry.COLUMN_GAME_PRICE, priceString);
         values.put(GameEntry.COLUMN_GAME_IMAGE, mUri);
-        // If the weight is not provided by the user, don't try to parse the string into an
-        // integer value. Use 0 by default.
-        int quantity = 0;
-        if (!TextUtils.isEmpty(quantityString)) {
-            quantity = Integer.parseInt(quantityString);
-        }
         values.put(GameEntry.COLUMN_GAME_STOCK, quantity);
 
-        // integer value. Use 0 by default.
-        int price = 0;
-        if (price > 0) {
-            Integer.parseInt(priceString);
-        }
-        values.put(GameEntry.COLUMN_GAME_PRICE, price);
+        // Insert a new pet into the provider, returning the content URI for the new pet.
+        Uri newUri = getContentResolver().insert(GameEntry.CONTENT_URI, values);
 
-        // Determine if this is a new or existing pet by checking if mCurrentGAMEUri is null or not
-        if (mCurrentGAMEUri == null) {
-            Uri newUri = getContentResolver().insert(GameEntry.CONTENT_URI, values);
-            if (newUri == null) {
-                Toast.makeText(this, getString(R.string.editor_insert_game_failed),
-                        Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, getString(R.string.editor_insert_game_successful),
-                        Toast.LENGTH_SHORT).show();
-            }
+        // Show a toast message depending on whether or not the insertion was successful
+        if (newUri == null) {
+            // If the new content URI is null, then there was an error with insertion.
+            Toast.makeText(this, getString(R.string.editor_insert_game_failed),
+                    Toast.LENGTH_SHORT).show();
         } else {
-            int rowsAffected = getContentResolver().update(mCurrentGAMEUri, values, null, null);
-            if (rowsAffected == 0) {
-                Toast.makeText(this, getString(R.string.editor_update_game_failed),
-                        Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, getString(R.string.editor_update_game_successful),
-                        Toast.LENGTH_SHORT).show();
-            }
-        }
-        if (mCurrentGAMEUri == null) {
-            Uri insertedRow = getContentResolver().insert(GameEntry.CONTENT_URI, values);
-            if (insertedRow == null) {
-                Toast.makeText(this, R.string.err_inserting_product, Toast.LENGTH_LONG).show();
-            } else {
-                Toast.makeText(this, R.string.ok_updated, Toast.LENGTH_LONG).show();
-                Intent intent = new Intent(this, CatalogActivity.class);
-                startActivity(intent);
-            }
-        } else {
-            // We are Updating
-            int rowUpdated = getContentResolver().update(mCurrentGAMEUri, values, null, null);
+            // Otherwise, the insertion was successful and we can display a toast.
+            Toast.makeText(this, getString(R.string.editor_insert_game_successful),
+                    Toast.LENGTH_SHORT).show();
+        }}
 
-            if (rowUpdated == 0) {
-                Toast.makeText(this, R.string.err_inserting_product, Toast.LENGTH_LONG).show();
-            } else {
-                Toast.makeText(this, R.string.ok_updated, Toast.LENGTH_LONG).show();
-                Intent intent = new Intent(this, CatalogActivity.class);
-                startActivity(intent);
+        public void increment(View view) {
+            quantity = quantity + 1;
+            if (quantity == 100) {
+                return;
             }
+            displayquantity(quantity);}
 
-        }
+        /**
+         * This method is called when the minus button is clicked.
+         */
+        public void decrement(View view) {
+
+            if (quantity < 1) {
+                // Show an error message as a toast
+                Toast.makeText(this, "You cannot have less than 1 coffee", Toast.LENGTH_SHORT).show();
+                // Exit this method early because there's nothing left to do
+                return;
+            }
+            quantity = quantity - 1;
+            displayquantity(quantity);
     }
+
 
     public void requestPermissions() {
         // Here, thisActivity is the current activity
@@ -505,27 +465,6 @@ public class EditorActivity extends AppCompatActivity implements
                 saveGame();
                 finish();
                 return true;
-
-            case R.id.action_sale:
-                if (quantity < 1) {
-                    // Show an error message as a toast
-                    Toast.makeText(this, "ALL SOLED", Toast.LENGTH_SHORT).show();
-                    // Exit this method early because there's nothing left to do
-                    return true;
-                }
-                quantity = quantity - 1;
-                displayquantity(quantity);
-                displayPrice(quantity * 5);
-
-                Intent intent = new Intent(Intent.ACTION_SENDTO);
-                intent.setData(Uri.parse("mailto:")); // only email apps should handle this
-                intent.putExtra(Intent.EXTRA_SUBJECT, "PS Game INVENTORY order for " + mNameEditText);
-                intent.putExtra(Intent.EXTRA_SUBJECT, quantity + "$");
-                if (intent.resolveActivity(getPackageManager()) != null) {
-                    startActivity(intent);
-                }
-                return true;
-
             case R.id.action_delete:
                 showDeleteConfirmationDialog();
                 return true;
@@ -594,8 +533,6 @@ public class EditorActivity extends AppCompatActivity implements
 
         if (cursor.moveToFirst()) {
 
-            int i_COL_image = 5;
-
 
             int nameColumnIndex = cursor.getColumnIndex(GameEntry.COLUMN_GAME_NAME);
             int genreColumnIndex = cursor.getColumnIndex(GameEntry.COLUMN_GAME_GENRE);
@@ -607,13 +544,13 @@ public class EditorActivity extends AppCompatActivity implements
             int genre = cursor.getInt(genreColumnIndex);
             int console = cursor.getInt(consoleColumnIndex);
             int quantity = cursor.getInt(quantityColumnIndex);
-            int price = cursor.getInt(priceColumnIndex);
+            String price = cursor.getString(priceColumnIndex);
 
 
             // Update the views on the screen with the values from the database
             mNameEditText.setText(name);
-            mQuantityEditText.setText(Integer.toString(quantity));
-            mPriceTextView.setText(Integer.toString(price));
+            mQuantity.setText(Integer.toString(quantity));
+            mPriceEditText.setText(price);
             mImageView.setImageURI(Uri.parse(mUri));
 
 
@@ -661,8 +598,8 @@ public class EditorActivity extends AppCompatActivity implements
 
         mNameEditText.setText("");
         mGenreSpinner.setSelection(0); //select "unknown" genre
-        mQuantityEditText.setText("");
-        mPriceTextView.setText("");
+        mQuantity.setText("");
+        mPriceEditText.setText("");
         mConsoleSpinner.setSelection(0); // Select "Unknown" console
         mImageView.setImageURI(myUri);
 
@@ -696,11 +633,17 @@ public class EditorActivity extends AppCompatActivity implements
                 deleteGame();
             }
         });
-        builder.setNegativeButton(R.string.cancel, null); {
+        builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
 
+                if (dialog != null) {
+                    dialog.dismiss();
+                }
+            }
+        });
         AlertDialog alertDialog = builder.create();
         alertDialog.show();
-    }}
+    }
 
 
     private void deleteGame() {
@@ -718,17 +661,14 @@ public class EditorActivity extends AppCompatActivity implements
         finish();
     }
 
+
+
     /**
      * This method displays the given quantity value on the screen.
      */
-    private void displayquantity(int effect) {
+    private void displayquantity(int number) {
         TextView quantityTextView = (TextView) findViewById(
                 R.id.edit_game_quantity);
-        quantityTextView.setText("" + effect);
-    }
-
-    private void displayPrice(int number) {
-        TextView priceTextView = (TextView) findViewById(R.id.order_summary_text_view);
-        priceTextView.setText(NumberFormat.getCurrencyInstance().format(number));
+        quantityTextView.setText("" + number);
     }
 }

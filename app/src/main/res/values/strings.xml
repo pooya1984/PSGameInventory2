@@ -57,4 +57,5 @@
     <string name="photo_heading">Picture of Game</string>
     <string name="err_inserting_product">Error with Inserting</string>
     <string name="ok_updated">updated</string>
+    <string name="error_game_stock">Game is out of Stock</string>
 </resources>
